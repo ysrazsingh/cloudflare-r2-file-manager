@@ -504,7 +504,7 @@
     </div>
 
     <script>
-        let currentFolder = '';
+        let currentFolder = getFolderFromUrl();
         let renamingFolder = '';
         let selectedFiles = new Set();
         let lastSelectedIndex = -1;
@@ -512,6 +512,11 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            loadCurrentFolder();
+        });
+
+        window.addEventListener('popstate', () => {
+            currentFolder = getFolderFromUrl();
             loadCurrentFolder();
         });
 
@@ -525,13 +530,25 @@
         }
 
         // Navigation
+        function getFolderFromUrl() {
+            return (new URLSearchParams(window.location.search).get('folder') || '').replace(/\/$/, '');
+        }
+
         function navigateToRoot() {
-            currentFolder = '';
-            loadCurrentFolder();
+            navigateToFolder('');
         }
 
         function navigateToFolder(folder) {
             currentFolder = folder.replace(/\/$/, '');
+            const url = new URL(window.location.href);
+            if (currentFolder) {
+                url.searchParams.set('folder', currentFolder);
+            } else {
+                url.searchParams.delete('folder');
+            }
+            if (url.href !== window.location.href) {
+                window.history.pushState(null, '', url);
+            }
             loadCurrentFolder();
         }
 
@@ -568,15 +585,22 @@
 
         function updateBreadcrumb() {
             const breadcrumb = document.getElementById('breadcrumb');
-            if (!currentFolder) {
-                breadcrumb.innerHTML = '';
-                return;
-            }
+            breadcrumb.replaceChildren();
+            if (!currentFolder) return;
+
             const parts = currentFolder.split('/');
-            breadcrumb.innerHTML = parts.map((part, index) => {
+            parts.forEach((part, index) => {
                 const path = parts.slice(0, index + 1).join('/');
-                return `<span class="text-gray-400">/</span> <button onclick="navigateToFolder('${path}')" class="text-blue-600 hover:text-blue-800">${part}</button>`;
-            }).join(' ');
+                const separator = document.createElement('span');
+                separator.className = 'text-gray-400';
+                separator.textContent = '/';
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'text-blue-600 hover:text-blue-800';
+                button.textContent = part;
+                button.addEventListener('click', () => navigateToFolder(path));
+                breadcrumb.append(separator, ' ', button, ' ');
+            });
         }
 
         // Load files and folders
@@ -586,7 +610,7 @@
             updateBreadcrumb();
 
             try {
-                const response = await fetch(`/list-files?folder=${currentFolder}`);
+                const response = await fetch(`/list-files?${new URLSearchParams({ folder: currentFolder })}`);
                 const data = await response.json();
 
                 document.getElementById('loading').classList.add('hidden');
