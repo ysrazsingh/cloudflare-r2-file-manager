@@ -170,6 +170,58 @@ Once the server is running, visit `http://localhost:3000` in your browser to acc
 - Endpoint: `GET /list-files`
 - Query Parameters: `folder=folder-name`
 
+### List more than 1,000 files
+
+- Endpoint: `GET /list-files-paginated`
+- Query parameters:
+  - `folder`: optional folder path; omit it to list the bucket root.
+  - `limit`: maximum number of entries in the response, from `1` to `10000` (default `1000`). The server follows R2 continuation tokens internally when more than one R2 request is needed.
+  - `cursor`: optional opaque `nextCursor` from the previous response. Keep the same `folder` when continuing, and URL-encode the cursor with `URLSearchParams`.
+- Like `/list-files`, this lists direct children only. Files and child folders both count toward `limit`. Object keys are returned as stored, including folder markers and placeholders if present.
+
+First request, returning up to 5,000 entries:
+
+```http
+GET /list-files-paginated?folder=uploads&limit=5000
+```
+
+Response shape (abbreviated):
+
+```json
+{
+    "files": ["uploads/file-1.json", "uploads/file-2.json"],
+    "folders": ["uploads/images/"],
+    "count": 3,
+    "hasMore": true,
+    "nextCursor": "opaque-token-from-r2"
+}
+```
+
+`count` is the number of entries in this response, not the total in the folder. Continue until `hasMore` is `false`; the final response has `nextCursor: null`. An empty folder returns empty arrays and `count: 0`. Invalid query parameter types or limits return HTTP `400`; R2 errors return HTTP `500` without returning a partial list as a success. A listing is not a snapshot: concurrent uploads or deletes can change the results between requests.
+
+Example client that retrieves all pages:
+
+```javascript
+const files = [];
+const folders = [];
+let cursor;
+
+do {
+    const query = new URLSearchParams({ folder: "uploads", limit: "5000" });
+    if (cursor) query.set("cursor", cursor);
+
+    const response = await fetch(`/list-files-paginated?${query}`);
+    const page = await response.json();
+    if (!response.ok) throw new Error(page.error || "Failed to list files");
+
+    files.push(...page.files);
+    folders.push(...page.folders);
+    cursor = page.hasMore ? page.nextCursor : null;
+} while (cursor);
+```
+
+This is an additional API. The existing endpoints and web interface continue to use their current listing behavior.
+
 6. **List All Folders**
 
 - Endpoint: `GET /list-folders`
@@ -212,6 +264,10 @@ Once the server is running, visit `http://localhost:3000` in your browser to acc
 - Endpoint: `GET /get-file-urls`
 - Query Parameters: `folder=folder-name&expires=3600` (expires is optional)
 - Returns pre-signed URLs for all files in the specified folder
+
+## Tests
+
+Run `npm test` with Node.js 18 or newer. The HTTP tests mock R2 and do not access a real bucket. They cover multi-page retrieval, cursor encoding, response limits, empty folders, invalid parameters, and failures partway through a listing.
 
 ## Contributing
 
