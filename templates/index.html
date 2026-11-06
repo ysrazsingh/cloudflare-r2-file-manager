@@ -5,6 +5,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>R2 File Manager</title>
+    <script>
+        // Apply the theme before the page renders to avoid a light flash.
+        const themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        let savedTheme = null;
+        try {
+            const storedTheme = localStorage.getItem('r2-manager-theme');
+            if (storedTheme === 'light' || storedTheme === 'dark') savedTheme = storedTheme;
+        } catch (error) {
+            // Theme switching still works when browser storage is unavailable.
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.dataset.theme = theme;
+            document.documentElement.style.colorScheme = theme;
+            const button = document.getElementById('theme-toggle');
+            if (button) {
+                const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+                button.setAttribute('aria-label', label);
+                button.title = label;
+                button.setAttribute('aria-pressed', String(theme === 'dark'));
+                document.getElementById('theme-toggle-label').textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            }
+        }
+
+        function toggleTheme() {
+            savedTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            applyTheme(savedTheme);
+            try {
+                localStorage.setItem('r2-manager-theme', savedTheme);
+            } catch (error) {
+                // Keep the current choice for this page even if it cannot be saved.
+            }
+        }
+
+        applyTheme(savedTheme || (themeMediaQuery.matches ? 'dark' : 'light'));
+        themeMediaQuery.addEventListener('change', (event) => {
+            if (!savedTheme) applyTheme(event.matches ? 'dark' : 'light');
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme(document.documentElement.dataset.theme);
+        });
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Alpine.js for reactive components -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -93,6 +135,126 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #6b7280;
         }
+
+        .theme-icon-light {
+            display: none;
+        }
+
+        html[data-theme="dark"] .theme-icon-light {
+            display: inline-flex;
+        }
+
+        html[data-theme="dark"] .theme-icon-dark {
+            display: none;
+        }
+
+        /* Cover shared utility classes, including dynamically rendered rows and modals. */
+        html[data-theme="dark"] body,
+        html[data-theme="dark"] .bg-gray-50 {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        html[data-theme="dark"] .bg-white,
+        html[data-theme="dark"] .bg-gray-100 {
+            background-color: #1e293b;
+        }
+
+        html[data-theme="dark"] .bg-gray-200 {
+            background-color: #334155;
+        }
+
+        html[data-theme="dark"] :is(.text-gray-900, .text-gray-800, .text-black) {
+            color: #f1f5f9;
+        }
+
+        html[data-theme="dark"] :is(.text-gray-700, .text-gray-600) {
+            color: #cbd5e1;
+        }
+
+        html[data-theme="dark"] :is(.text-gray-500, .text-gray-400) {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] .text-gray-300 {
+            color: #64748b;
+        }
+
+        html[data-theme="dark"] :is(.text-blue-500, .text-blue-600) {
+            color: #60a5fa;
+        }
+
+        html[data-theme="dark"] .text-green-600 {
+            color: #4ade80;
+        }
+
+        html[data-theme="dark"] :is(.text-red-500, .text-red-600) {
+            color: #f87171;
+        }
+
+        html[data-theme="dark"] :is(.border, .border-b, .border-t, .border-gray-100, .border-gray-200, .border-gray-300) {
+            border-color: #334155;
+        }
+
+        html[data-theme="dark"] :is(input:not([type="checkbox"]):not([type="file"]), textarea) {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        html[data-theme="dark"] :is(input, textarea)::placeholder {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] :is(button, input, textarea):focus-visible {
+            outline: 2px solid #60a5fa;
+            outline-offset: 2px;
+        }
+
+        html[data-theme="dark"] :is(.hover\:bg-gray-50, .hover\:bg-gray-100):hover,
+        html[data-theme="dark"] :is(.file-item, .folder-item):hover {
+            background-color: #334155;
+        }
+
+        html[data-theme="dark"] .hover\:text-gray-800:hover {
+            color: #f1f5f9;
+        }
+
+        html[data-theme="dark"] .hover\:text-blue-800:hover {
+            color: #93c5fd;
+        }
+
+        html[data-theme="dark"] :is(.hover\:text-red-700, .hover\:text-red-800):hover {
+            color: #fca5a5;
+        }
+
+        html[data-theme="dark"] .hover\:border-blue-400:hover {
+            border-color: #60a5fa;
+        }
+
+        html[data-theme="dark"] .hover\:border-green-400:hover {
+            border-color: #4ade80;
+        }
+
+        html[data-theme="dark"] .file-item.selected {
+            background-color: #334155;
+            border-left-color: #60a5fa;
+        }
+
+        html[data-theme="dark"] .file-item.range-hover {
+            background-color: #1e3a5f;
+        }
+
+        html[data-theme="dark"] ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
     </style>
 </head>
 
@@ -106,6 +268,13 @@
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <h1 class="text-xl font-bold text-gray-900">R2 Manager V2</h1>
                 <div class="flex gap-2 flex-wrap">
+                    <button id="theme-toggle" type="button" onclick="toggleTheme()"
+                        aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode"
+                        class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
+                        <span class="theme-icon-dark" aria-hidden="true"><i data-feather="moon" class="w-4 h-4"></i></span>
+                        <span class="theme-icon-light" aria-hidden="true"><i data-feather="sun" class="w-4 h-4"></i></span>
+                        <span id="theme-toggle-label" class="hidden sm:inline">Dark Mode</span>
+                    </button>
                     <button onclick="selectAllFiles()" id="select-all-btn"
                         class="bg-gray-600 hover:bg-gray-700 text-center flex justify-center items-center text-white px-3 py-1.5 rounded text-sm transition">
                         <i data-feather="check-square" class="w-4 h-4 inline mr-1"></i>Select All
@@ -137,6 +306,12 @@
                         <span class="hidden sm:inline text-blue-500">Bucket</span>
                     </button>
                     <span id="breadcrumb" class="text-gray-600 truncate"></span>
+                    <button type="button" onclick="copyCurrentFolderPath()" title="Copy current folder path"
+                        aria-label="Copy current folder path"
+                        class="text-gray-500 hover:text-gray-800 hover:bg-gray-100 p-1.5 rounded flex items-center gap-1 flex-shrink-0">
+                        <i data-feather="copy" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Copy Path</span>
+                    </button>
                 </div>
 
                 <!-- Action Buttons -->
@@ -329,7 +504,7 @@
     </div>
 
     <script>
-        let currentFolder = '';
+        let currentFolder = getFolderFromUrl();
         let renamingFolder = '';
         let selectedFiles = new Set();
         let lastSelectedIndex = -1;
@@ -337,6 +512,11 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            loadCurrentFolder();
+        });
+
+        window.addEventListener('popstate', () => {
+            currentFolder = getFolderFromUrl();
             loadCurrentFolder();
         });
 
@@ -350,27 +530,77 @@
         }
 
         // Navigation
+        function getFolderFromUrl() {
+            return (new URLSearchParams(window.location.search).get('folder') || '').replace(/\/$/, '');
+        }
+
         function navigateToRoot() {
-            currentFolder = '';
-            loadCurrentFolder();
+            navigateToFolder('');
         }
 
         function navigateToFolder(folder) {
             currentFolder = folder.replace(/\/$/, '');
+            const url = new URL(window.location.href);
+            if (currentFolder) {
+                url.searchParams.set('folder', currentFolder);
+            } else {
+                url.searchParams.delete('folder');
+            }
+            if (url.href !== window.location.href) {
+                window.history.pushState(null, '', url);
+            }
             loadCurrentFolder();
+        }
+
+        async function copyCurrentFolderPath() {
+            const path = currentFolder || '/';
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(path);
+                } else {
+                    const input = document.createElement('textarea');
+                    const previousFocus = document.activeElement;
+                    input.value = path;
+                    input.setAttribute('readonly', '');
+                    input.style.position = 'fixed';
+                    input.style.opacity = '0';
+                    document.body.appendChild(input);
+
+                    try {
+                        input.select();
+                        if (!document.execCommand('copy')) {
+                            throw new Error('Copy failed');
+                        }
+                    } finally {
+                        input.remove();
+                        if (previousFocus) previousFocus.focus({ preventScroll: true });
+                    }
+                }
+                showToast('Folder path copied to clipboard');
+            } catch (error) {
+                showToast('Failed to copy folder path', 'error');
+            }
         }
 
         function updateBreadcrumb() {
             const breadcrumb = document.getElementById('breadcrumb');
-            if (!currentFolder) {
-                breadcrumb.innerHTML = '';
-                return;
-            }
+            breadcrumb.replaceChildren();
+            if (!currentFolder) return;
+
             const parts = currentFolder.split('/');
-            breadcrumb.innerHTML = parts.map((part, index) => {
+            parts.forEach((part, index) => {
                 const path = parts.slice(0, index + 1).join('/');
-                return `<span class="text-gray-400">/</span> <button onclick="navigateToFolder('${path}')" class="text-blue-600 hover:text-blue-800">${part}</button>`;
-            }).join(' ');
+                const separator = document.createElement('span');
+                separator.className = 'text-gray-400';
+                separator.textContent = '/';
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'text-blue-600 hover:text-blue-800';
+                button.textContent = part;
+                button.addEventListener('click', () => navigateToFolder(path));
+                breadcrumb.append(separator, ' ', button, ' ');
+            });
         }
 
         // Load files and folders
@@ -380,7 +610,7 @@
             updateBreadcrumb();
 
             try {
-                const response = await fetch(`/list-files?folder=${currentFolder}`);
+                const response = await fetch(`/list-files?${new URLSearchParams({ folder: currentFolder })}`);
                 const data = await response.json();
 
                 document.getElementById('loading').classList.add('hidden');

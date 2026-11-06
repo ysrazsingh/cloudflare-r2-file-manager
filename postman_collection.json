@@ -7,6 +7,27 @@
 	},
 	"item": [
 		{
+			"name": "List files with pagination (more than 1000 entries)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"description": "Lists up to 10000 direct entries, including child folders. Copy nextCursor from the response into the cursor query parameter to continue with the same folder until hasMore is false.",
+				"url": {
+					"raw": "http://localhost:3000/list-files-paginated?folder=uploads&limit=5000",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["list-files-paginated"],
+					"query": [
+						{ "key": "folder", "value": "uploads" },
+						{ "key": "limit", "value": "5000" },
+						{ "key": "cursor", "value": "", "disabled": true }
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "List all files inside a folder",
 			"request": {
 				"method": "GET",

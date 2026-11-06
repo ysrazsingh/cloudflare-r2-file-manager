@@ -213,6 +213,61 @@ app.get("/list-files", async (req, res) => {
     }
 });
 
+// List large folders with bounded responses and a continuation cursor.
+app.get("/list-files-paginated", async (req, res) => {
+    const { folder, limit = "1000", cursor } = req.query;
+
+    if (folder !== undefined && typeof folder !== "string") {
+        return res.status(400).send({ error: "folder must be a string" });
+    }
+    if (typeof limit !== "string" || !/^\d+$/.test(limit) || Number(limit) < 1 || Number(limit) > 10000) {
+        return res.status(400).send({ error: "limit must be an integer between 1 and 10000" });
+    }
+    if (cursor !== undefined && (typeof cursor !== "string" || cursor.length === 0)) {
+        return res.status(400).send({ error: "cursor must be a non-empty string" });
+    }
+
+    const maxItems = Number(limit);
+    const files = [];
+    const folders = [];
+    let nextCursor = cursor;
+    let hasMore = false;
+
+    try {
+        do {
+            const params = {
+                Bucket: BUCKET_NAME,
+                Prefix: folder ? `${folder.replace(/\/+$/, "")}/` : "",
+                Delimiter: "/",
+                MaxKeys: Math.min(1000, maxItems - files.length - folders.length)
+            };
+            if (nextCursor !== undefined) {
+                params.ContinuationToken = nextCursor;
+            }
+
+            const data = await s3.send(new ListObjectsV2Command(params));
+            hasMore = data.IsTruncated === true;
+            if (hasMore && (!data.NextContinuationToken || data.NextContinuationToken === nextCursor)) {
+                throw new Error("R2 did not return a usable continuation token");
+            }
+
+            files.push(...(data.Contents || []).map((item) => item.Key));
+            folders.push(...(data.CommonPrefixes || []).map((item) => item.Prefix));
+            nextCursor = hasMore ? data.NextContinuationToken : undefined;
+        } while (hasMore && files.length + folders.length < maxItems);
+
+        res.status(200).send({
+            files,
+            folders,
+            count: files.length + folders.length,
+            hasMore,
+            nextCursor: nextCursor ?? null
+        });
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+});
+
 // 6. List all folders
 app.get("/list-folders", async (req, res) => {
     const params = {
