@@ -705,13 +705,13 @@
             folders.forEach(folder => {
                 const folderName = folder.replace(/\/$/, '').split('/').pop();
                 const div = document.createElement('div');
-                div.className = 'folder-item border-b border-gray-200 p-2 flex items-center justify-between cursor-pointer';
+                div.className = 'folder-item border-b border-gray-200 p-2 flex items-center justify-between gap-2 cursor-pointer';
                 div.innerHTML = `
-                    <div class="flex items-center gap-2 flex-1" onclick="navigateToFolder('${folder.replace(/\/$/, '')}')">
-                        <i data-feather="folder" class="w-5 h-5 text-gray-600"></i>
-                        <span class="font-medium text-gray-900 text-sm">${folderName}</span>
+                    <div class="flex items-center gap-2 flex-1 min-w-0" onclick="navigateToFolder('${folder.replace(/\/$/, '')}')">
+                        <i data-feather="folder" class="w-5 h-5 flex-shrink-0 text-gray-600"></i>
+                        <span class="font-medium text-gray-900 text-sm flex-1 min-w-0 truncate">${folderName}</span>
                     </div>
-                    <div class="flex gap-1">
+                    <div class="flex gap-1 flex-shrink-0">
                         <button onclick="event.stopPropagation(); openRenameFolderModal('${folder.replace(/\/$/, '')}')" class="action-btn text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition" title="Rename">
                             <i data-feather="edit-2" class="w-4 h-4"></i>
                         </button>
@@ -723,6 +723,7 @@
                         </button>
                     </div>
                 `;
+                div.querySelector('span').title = folderName;
                 foldersList.appendChild(div);
             });
         }
@@ -744,7 +745,7 @@
                 const isSelected = selectedFiles.has(file);
 
                 const div = document.createElement('div');
-                div.className = `file-item border-b border-gray-200 p-2 flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'selected' : ''}`;
+                div.className = `file-item border-b border-gray-200 p-2 flex items-center justify-between gap-2 cursor-pointer transition-colors ${isSelected ? 'selected' : ''}`;
                 div.dataset.file = file;
                 div.dataset.index = index;
 
@@ -767,14 +768,14 @@
                 };
 
                 div.innerHTML = `
-                    <div class="flex items-center gap-2 flex-1">
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
                         <input type="checkbox" ${isSelected ? 'checked' : ''} 
                                onclick="event.stopPropagation(); handleFileClick('${file}', ${index}, event)" 
-                               class="w-4 h-4 text-gray-600 rounded focus:ring-2 focus:ring-gray-500 cursor-pointer">
-                        <i data-feather="${getFileIcon(fileExt)}" class="w-5 h-5 text-gray-600"></i>
-                        <span class="text-gray-700 text-sm truncate">${fileName}</span>
+                               class="w-4 h-4 flex-shrink-0 text-gray-600 rounded focus:ring-2 focus:ring-gray-500 cursor-pointer">
+                        <i data-feather="${getFileIcon(fileExt)}" class="w-5 h-5 flex-shrink-0 text-gray-600"></i>
+                        <span class="text-gray-700 text-sm flex-1 min-w-0 truncate">${fileName}</span>
                     </div>
-                    <div class="flex gap-1">
+                    <div class="flex gap-1 flex-shrink-0">
                         <button onclick="event.stopPropagation(); getFileUrl('${file}')" 
                                 class="action-btn text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition" 
                                 title="Get URL">
@@ -787,6 +788,7 @@
                         </button>
                     </div>
                 `;
+                div.querySelector('span').title = fileName;
                 filesList.appendChild(div);
             });
         }
